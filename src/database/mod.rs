@@ -1,8 +1,9 @@
 mod private;
+extern crate bcrypt;
 
+use bcrypt::{BcryptResult, DEFAULT_COST, hash, verify};
 use crate::database::private::DB;
 
-use data_encoding::BASE64;
 use mongodb::{
     bson, bson::oid::ObjectId, options::ClientOptions, Client, Database,
 };
@@ -21,12 +22,18 @@ impl MongoDB {
     }
     pub async fn create_new_acc(&self, user: &mut UserDboPassUser) -> mongodb::error::Result<()> {
         let collection = self.database.collection::<User>("chat");
-        collection.insert_one(User {
-            _id: ObjectId::new(),
-            username: user.username.clone(),
-            password: BASE64.encode(user.password.clone().as_ref())
-        }, None).await?;
-        Ok(())
+
+        match hash(&user.password, 4) {
+            Ok(hash_password) => {
+                collection.insert_one(User {
+                    _id: ObjectId::new(),
+                    username: user.username.clone(),
+                    password: hash_password
+                }, None).await?;
+                Ok(())
+            }
+            Err(_) => { Ok(()) },
+        }
     }
 
     pub async fn get_all_items(&self) -> mongodb::error::Result<Vec<UserDboIdUser>> {
