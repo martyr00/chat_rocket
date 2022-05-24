@@ -11,5 +11,7 @@ rocket_db_pools = { version = "0.1.0-rc.2", features = ["sqlx_sqlite"]}
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "1.0.0", features = ["v4"] }
+data-encoding = "2.3.2"
 tokio = "1.18.2"
-chrono = "0.4"
+digest = "0.10.3"
+blake2 = "0.8"

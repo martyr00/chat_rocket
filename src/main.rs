@@ -13,7 +13,8 @@ async fn rocket() -> _ {
         .attach(database::init().await)
         .mount(
             "/api/v1",
-            routes![
+            routes![post_new_item,
+                get_all_acc
             ],
         )
         .register(
