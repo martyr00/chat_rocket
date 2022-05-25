@@ -1,6 +1,6 @@
+use chrono::{NaiveTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
-use chrono::{NaiveTime, Utc};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {

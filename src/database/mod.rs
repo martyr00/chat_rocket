@@ -8,8 +8,8 @@ use chrono::{NaiveTime, Utc};
 use crate::model::{Message, User};
 use crate::{MessageDBO, MessageDBOId, UserDboIdUser, UserDboPassUser};
 use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
-use rocket::{fairing::AdHoc, futures::TryStreamExt};
 use rocket::serde::json::Json;
+use rocket::{fairing::AdHoc, futures::TryStreamExt};
 
 pub struct MongoDB {
     database: Database,
@@ -57,7 +57,10 @@ impl MongoDB {
         Ok(users)
     }
 
-    pub async fn get_data_one_user(&self, username: String) -> mongodb::error::Result<Option<User>> {
+    pub async fn get_data_one_user(
+        &self,
+        username: String,
+    ) -> mongodb::error::Result<Option<User>> {
         let collection = self.database.collection::<User>("user");
         Ok(collection
             .find_one(bson::doc! { "username": username }, None)
@@ -67,12 +70,17 @@ impl MongoDB {
     pub async fn post_message(&self, message_dbo: MessageDBOId) -> mongodb::error::Result<()> {
         let collection = self.database.collection::<Message>("message");
         let time: NaiveTime = Utc::now().time();
-        collection.insert_one(Message {
-            body: message_dbo.body.clone(),
-            to: message_dbo.to.clone(),
-            from: message_dbo.from.clone(),
-            time: time.to_string(),
-        }, None).await?;
+        collection
+            .insert_one(
+                Message {
+                    body: message_dbo.body.clone(),
+                    to: message_dbo.to.clone(),
+                    from: message_dbo.from.clone(),
+                    time: time.to_string(),
+                },
+                None,
+            )
+            .await?;
         Ok(())
     }
 }

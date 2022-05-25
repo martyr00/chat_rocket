@@ -1,10 +1,10 @@
 use bcrypt::{verify, BcryptResult};
+use mongodb::bson::oid::ObjectId;
+use rocket::futures::future::err;
 use rocket::State;
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use std::future::Future;
-use mongodb::bson::oid::ObjectId;
-use rocket::futures::future::err;
 
 use crate::database;
 use crate::model::User;
@@ -94,14 +94,14 @@ pub async fn post_new_message(
     database: &State<database::MongoDB>,
 ) -> Result<Status, Status> {
     match form {
-        Some(ref mut form) => {
-            match object_id_parse_str(form.to.clone(), form.from.clone()) {
-                Ok(vec_ids) => {
+        Some(ref mut form) => match object_id_parse_str(form.to.clone()) {
+            Ok(to_id) => match object_id_parse_str(form.from.clone()) {
+                Ok(from_id) => {
                     if get_is_valid_message_data(form.body.clone()).await {
                         let result = MessageDBOId {
                             body: form.body.clone(),
-                            to: vec_ids[0],
-                            from: vec_ids[1]
+                            to: to_id,
+                            from: from_id,
                         };
                         match database.post_message(result).await {
                             Ok(_) => Ok(Status::Ok),
@@ -111,42 +111,25 @@ pub async fn post_new_message(
                         Err(Status::BadRequest)
                     }
                 }
-                Err(_) => {
-                    Err(Status::BadRequest)
-                }
-            }
-        }
+                Err(_) => Err(Status::BadRequest),
+            },
+            Err(_) => Err(Status::BadRequest),
+        },
         None => Err(Status::BadRequest),
     }
 }
 
-fn object_id_parse_str(to_id_str: String, from_id_str: String,) -> Result<Vec<ObjectId>, String> {
-    let mut array_ids = Vec::new();
-    match ObjectId::parse_str(to_id_str) {
-        Ok(to_id) => {
-            array_ids.push(to_id);
-            match ObjectId::parse_str(from_id_str) {
-                Ok(from_id) => {
-                    array_ids.push(from_id);
-                    return Ok(array_ids);
-                }
-                Err(error) => {
-                    Err(format!("{}", error))
-                }
-            }
-        }
-        Err(error) => {
-            Err(format!("{}", error))
-        }
+fn object_id_parse_str(id_str: String) -> Result<ObjectId, String> {
+    match ObjectId::parse_str(id_str) {
+        Ok(to_id) => Ok(to_id),
+        Err(error) => Err(format!("{}", error)),
     }
 }
 
-async fn get_is_valid_message_data(
-    body: String,
-) -> bool {
+async fn get_is_valid_message_data(body: String) -> bool {
     return if !body.is_empty() {
         if body.len() < 200 {
-           true
+            true
         } else {
             false
         }
@@ -177,10 +160,7 @@ async fn get_is_valid_user_data(
     };
 }
 
-async fn login(
-    username: String,
-    database: &State<database::MongoDB>
-) -> Result<bool, User> {
+async fn login(username: String, database: &State<database::MongoDB>) -> Result<bool, User> {
     match database.get_data_one_user(username).await {
         Ok(user_login) => match user_login {
             Some(result) => Err(result),
