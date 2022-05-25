@@ -1,20 +1,17 @@
 mod private;
 extern crate bcrypt;
 
-use bcrypt::{BcryptResult, DEFAULT_COST, hash, verify};
 use crate::database::private::DB;
+use bcrypt::{hash, verify, BcryptResult, DEFAULT_COST};
 
-use mongodb::{
-    bson, bson::oid::ObjectId, options::ClientOptions, Client, Database,
-};
-use rocket::{fairing::AdHoc, futures::TryStreamExt};
-use crate::{UserDboIdUser, UserDboPassUser};
 use crate::model::User;
+use crate::{UserDboIdUser, UserDboPassUser};
+use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
+use rocket::{fairing::AdHoc, futures::TryStreamExt};
 
 pub struct MongoDB {
     database: Database,
 }
-
 
 impl MongoDB {
     fn new(database: Database) -> Self {
@@ -25,14 +22,19 @@ impl MongoDB {
 
         match hash(&user.password, 4) {
             Ok(hash_password) => {
-                collection.insert_one(User {
-                    _id: ObjectId::new(),
-                    username: user.username.clone(),
-                    password: hash_password
-                }, None).await?;
+                collection
+                    .insert_one(
+                        User {
+                            _id: ObjectId::new(),
+                            username: user.username.clone(),
+                            password: hash_password,
+                        },
+                        None,
+                    )
+                    .await?;
                 Ok(())
             }
-            Err(_) => { Ok(()) },
+            Err(_) => Ok(()),
         }
     }
 
@@ -51,6 +53,13 @@ impl MongoDB {
         }
 
         Ok(users)
+    }
+
+    pub async fn post_login(&self, username: String) -> mongodb::error::Result<Option<User>> {
+        let collection = self.database.collection::<User>("chat");
+        Ok(collection
+            .find_one(bson::doc! { "username": username }, None)
+            .await?)
     }
 }
 

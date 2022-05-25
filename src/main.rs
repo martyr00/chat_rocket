@@ -1,4 +1,5 @@
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
 mod database;
 mod model;
@@ -11,18 +12,13 @@ use routes::*;
 async fn rocket() -> _ {
     rocket::build()
         .attach(database::init().await)
-        .mount(
-            "/api/v1",
-            routes![post_new_item,
-                get_all_acc
-            ],
-        )
+        .mount("/api/v1", routes![post_new_item, get_all_acc, post_login])
         .register(
             "/",
             catchers![
                 not_found,
                 forbidden,
-                unprocessable_entity,
+                unauthorized,
                 bad_request,
                 internal_sever_error
             ],
@@ -67,11 +63,10 @@ fn not_found() -> Json<ServerError> {
     })
 }
 
-#[catch(422)]
-fn unprocessable_entity() -> Json<ServerError> {
+#[catch(401)]
+fn unauthorized() -> Json<ServerError> {
     Json(ServerError {
-        title: "Unprocessable Entity".to_string(),
-        desc: "The request was well-formed but was unable to be followed due to semantic api."
-            .to_string(),
+        title: "Unauthorized".to_string(),
+        desc: "he request requires user authentication.".to_string(),
     })
 }
