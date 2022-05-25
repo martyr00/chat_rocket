@@ -3,6 +3,8 @@ use rocket::State;
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use std::future::Future;
+use mongodb::bson::oid::ObjectId;
+use rocket::futures::future::err;
 
 use crate::database;
 use crate::model::User;
@@ -17,6 +19,20 @@ pub struct UserDboPassUser {
 pub struct UserDboIdUser {
     pub(crate) _id: String,
     pub(crate) username: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MessageDBO {
+    pub body: String,
+    pub to: String,
+    pub from: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MessageDBOId {
+    pub body: String,
+    pub to: ObjectId,
+    pub from: ObjectId,
 }
 
 #[post("/chat/user", data = "<form>", format = "json")]
@@ -72,6 +88,73 @@ pub async fn get_all_acc(
     };
 }
 
+#[post("/chat/message", data = "<form>", format = "json")]
+pub async fn post_new_message(
+    mut form: Option<Json<MessageDBO>>,
+    database: &State<database::MongoDB>,
+) -> Result<Status, Status> {
+    match form {
+        Some(ref mut form) => {
+            match object_id_parse_str(form.to.clone(), form.from.clone()) {
+                Ok(vec_ids) => {
+                    if get_is_valid_message_data(form.body.clone()).await {
+                        let result = MessageDBOId {
+                            body: form.body.clone(),
+                            to: vec_ids[0],
+                            from: vec_ids[1]
+                        };
+                        match database.post_message(result).await {
+                            Ok(_) => Ok(Status::Ok),
+                            Err(_) => Err(Status::InternalServerError),
+                        }
+                    } else {
+                        Err(Status::BadRequest)
+                    }
+                }
+                Err(_) => {
+                    Err(Status::BadRequest)
+                }
+            }
+        }
+        None => Err(Status::BadRequest),
+    }
+}
+
+fn object_id_parse_str(to_id_str: String, from_id_str: String,) -> Result<Vec<ObjectId>, String> {
+    let mut array_ids = Vec::new();
+    match ObjectId::parse_str(to_id_str) {
+        Ok(to_id) => {
+            array_ids.push(to_id);
+            match ObjectId::parse_str(from_id_str) {
+                Ok(from_id) => {
+                    array_ids.push(from_id);
+                    return Ok(array_ids);
+                }
+                Err(error) => {
+                    Err(format!("{}", error))
+                }
+            }
+        }
+        Err(error) => {
+            Err(format!("{}", error))
+        }
+    }
+}
+
+async fn get_is_valid_message_data(
+    body: String,
+) -> bool {
+    return if !body.is_empty() {
+        if body.len() < 200 {
+           true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+}
+
 async fn get_is_valid_user_data(
     user: &UserDboPassUser,
     database: &State<database::MongoDB>,
@@ -94,8 +177,11 @@ async fn get_is_valid_user_data(
     };
 }
 
-async fn login(username: String, database: &State<database::MongoDB>) -> Result<bool, User> {
-    match database.post_login(username).await {
+async fn login(
+    username: String,
+    database: &State<database::MongoDB>
+) -> Result<bool, User> {
+    match database.get_data_one_user(username).await {
         Ok(user_login) => match user_login {
             Some(result) => Err(result),
             None => Ok(true),

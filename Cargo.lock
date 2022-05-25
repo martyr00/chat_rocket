@@ -408,6 +408,7 @@ name = "chat_rocket"
 version = "0.1.0"
 dependencies = [
  "bcrypt",
+ "chrono",
  "mongodb",
  "rocket",
  "rocket_db_pools",

@@ -3,11 +3,13 @@ extern crate bcrypt;
 
 use crate::database::private::DB;
 use bcrypt::{hash, verify, BcryptResult, DEFAULT_COST};
+use chrono::{NaiveTime, Utc};
 
-use crate::model::User;
-use crate::{UserDboIdUser, UserDboPassUser};
+use crate::model::{Message, User};
+use crate::{MessageDBO, MessageDBOId, UserDboIdUser, UserDboPassUser};
 use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
 use rocket::{fairing::AdHoc, futures::TryStreamExt};
+use rocket::serde::json::Json;
 
 pub struct MongoDB {
     database: Database,
@@ -18,7 +20,7 @@ impl MongoDB {
         MongoDB { database }
     }
     pub async fn create_new_acc(&self, user: &mut UserDboPassUser) -> mongodb::error::Result<()> {
-        let collection = self.database.collection::<User>("chat");
+        let collection = self.database.collection::<User>("user");
 
         match hash(&user.password, 4) {
             Ok(hash_password) => {
@@ -39,7 +41,7 @@ impl MongoDB {
     }
 
     pub async fn get_all_items(&self) -> mongodb::error::Result<Vec<UserDboIdUser>> {
-        let collection = self.database.collection::<User>("chat");
+        let collection = self.database.collection::<User>("user");
 
         let mut cursor = collection.find(None, None).await?;
 
@@ -55,11 +57,23 @@ impl MongoDB {
         Ok(users)
     }
 
-    pub async fn post_login(&self, username: String) -> mongodb::error::Result<Option<User>> {
-        let collection = self.database.collection::<User>("chat");
+    pub async fn get_data_one_user(&self, username: String) -> mongodb::error::Result<Option<User>> {
+        let collection = self.database.collection::<User>("user");
         Ok(collection
             .find_one(bson::doc! { "username": username }, None)
             .await?)
+    }
+
+    pub async fn post_message(&self, message_dbo: MessageDBOId) -> mongodb::error::Result<()> {
+        let collection = self.database.collection::<Message>("message");
+        let time: NaiveTime = Utc::now().time();
+        collection.insert_one(Message {
+            body: message_dbo.body.clone(),
+            to: message_dbo.to.clone(),
+            from: message_dbo.from.clone(),
+            time: time.to_string(),
+        }, None).await?;
+        Ok(())
     }
 }
 
