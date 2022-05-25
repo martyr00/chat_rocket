@@ -78,7 +78,7 @@ pub async fn get_all_acc(
     database: &State<database::MongoDB>,
 ) -> Result<Json<Vec<UserDboIdUser>>, Status> {
     return match database.get_all_items().await {
-        Ok(users_todo) => Ok(Json(users_todo)),
+        Ok(users) => Ok(Json(users)),
         Err(error) => {
             println!("----------------");
             println!("error: {:?}", error);
@@ -116,6 +116,22 @@ pub async fn post_new_message(
             Err(_) => Err(Status::BadRequest),
         },
         None => Err(Status::BadRequest),
+    }
+}
+
+#[get("/chat/message/preview/<id>")]
+pub async fn get_all_preview(
+    id: String,
+    database: &State<database::MongoDB>,
+) -> Result<Json<Vec<UserDboIdUser>>, Status> {
+    match object_id_parse_str(id) {
+        Ok(id) => {
+            match database.find_all_info_for_preview(id).await {
+                Ok(user_from) => Ok(Json(user_from)),
+                Err(_) => { Err(Status::NotFound) }
+            }
+        }
+        Err(_) => { Err(Status::BadRequest) }
     }
 }
 

@@ -83,6 +83,29 @@ impl MongoDB {
             .await?;
         Ok(())
     }
+
+    pub async fn find_all_info_for_preview(&self, id:ObjectId) -> mongodb::error::Result<Vec<UserDboIdUser>> {
+        let collection_message = self.database.collection::<Message>("message");
+        let collection_user = self.database.collection::<User>("user");
+
+        let mut cursor_massage = collection_message.find(bson::doc! { "to": id }, None).await?;
+
+        let mut id_user_from: Vec<UserDboIdUser> = vec![];
+
+        while let Some(res_message) = cursor_massage.try_next().await? {
+            let mut cursor_user = collection_user.find(bson::doc! { "_id": res_message.from }, None).await?;
+
+            while let Some(res_user) = cursor_user.try_next().await? {
+                let customer_json = UserDboIdUser {
+                    _id: res_message.from.clone().to_string(),
+                    username: res_user.username.to_string(),
+                };
+
+                id_user_from.push(customer_json);
+            }
+        }
+        Ok(id_user_from)
+    }
 }
 
 pub async fn init() -> AdHoc {
