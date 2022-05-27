@@ -2,13 +2,13 @@ mod private;
 extern crate bcrypt;
 
 use crate::database::private::DB;
-use bcrypt::{hash, verify, BcryptResult, DEFAULT_COST};
+use bcrypt::hash;
 use chrono::{NaiveTime, Utc};
+use std::collections::HashSet;
 
 use crate::model::{Message, User};
-use crate::{MessageDBO, MessageDBOId, UserDboIdUser, UserDboPassUser};
+use crate::{MessageDBOId, MessageTwoUsers, UserDboIdUser, UserDboPassUser};
 use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
-use rocket::serde::json::Json;
 use rocket::{fairing::AdHoc, futures::TryStreamExt};
 
 pub struct MongoDB {
@@ -84,27 +84,67 @@ impl MongoDB {
         Ok(())
     }
 
-    pub async fn find_all_info_for_preview(&self, id:ObjectId) -> mongodb::error::Result<Vec<UserDboIdUser>> {
+    pub async fn find_all_info_for_preview(
+        &self,
+        id: ObjectId,
+    ) -> mongodb::error::Result<HashSet<String>> {
         let collection_message = self.database.collection::<Message>("message");
         let collection_user = self.database.collection::<User>("user");
 
-        let mut cursor_massage = collection_message.find(bson::doc! { "to": id }, None).await?;
+        let mut cursor_massage = collection_message
+            .find(bson::doc! { "to": id }, None)
+            .await?;
 
-        let mut id_user_from: Vec<UserDboIdUser> = vec![];
+        let mut username_hashset = HashSet::<String>::new();
 
         while let Some(res_message) = cursor_massage.try_next().await? {
-            let mut cursor_user = collection_user.find(bson::doc! { "_id": res_message.from }, None).await?;
-
+            let mut cursor_user = collection_user
+                .find(bson::doc! { "_id": res_message.from }, None)
+                .await?;
             while let Some(res_user) = cursor_user.try_next().await? {
-                let customer_json = UserDboIdUser {
-                    _id: res_message.from.clone().to_string(),
-                    username: res_user.username.to_string(),
-                };
+                let username_json = res_user.username.to_string();
 
-                id_user_from.push(customer_json);
+                username_hashset.insert(username_json);
             }
         }
-        Ok(id_user_from)
+        Ok(username_hashset)
+    }
+
+    pub async fn get_massages_two_users(
+        &self,
+        to_id: ObjectId,
+        from_id: ObjectId,
+    ) -> mongodb::error::Result<Vec<MessageTwoUsers>> {
+        let collection_message = self.database.collection::<Message>("message");
+        let collection_user = self.database.collection::<User>("user");
+
+        let mut vec_messages = Vec::new();
+
+        let mut cursor_massage = collection_message
+            .find(bson::doc! { "to": to_id, "from": from_id }, None)
+            .await?;
+
+        while let Some(res_message) = cursor_massage.try_next().await? {
+            let mut cursor_from_user = collection_user
+                .find(bson::doc! { "_id": res_message.from }, None)
+                .await?;
+            while let Some(res_user_from) = cursor_from_user.try_next().await? {
+                let mut cursor_from_user = collection_user
+                    .find(bson::doc! { "_id": res_message.to }, None)
+                    .await?;
+                while let Some(res_user_to) = cursor_from_user.try_next().await? {
+                    let username_json = MessageTwoUsers {
+                        body: res_message.body.clone(),
+                        to: res_user_to.username.clone(),
+                        from: res_user_from.username.clone(),
+                        time: res_message.time.clone(),
+                    };
+
+                    vec_messages.push(username_json);
+                }
+            }
+        }
+        Ok(vec_messages)
     }
 }
 

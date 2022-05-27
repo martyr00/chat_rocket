@@ -1,10 +1,8 @@
-use bcrypt::{verify, BcryptResult};
+use bcrypt::verify;
 use mongodb::bson::oid::ObjectId;
-use rocket::futures::future::err;
-use rocket::State;
-use rocket::{http::Status, serde::json::Json};
+use rocket::{http::Status, serde::json::Json, State};
 use serde::{Deserialize, Serialize};
-use std::future::Future;
+use std::collections::HashSet;
 
 use crate::database;
 use crate::model::User;
@@ -35,7 +33,15 @@ pub struct MessageDBOId {
     pub from: ObjectId,
 }
 
-#[post("/chat/user", data = "<form>", format = "json")]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MessageTwoUsers {
+    pub body: String,
+    pub to: String,
+    pub from: String,
+    pub time: String,
+}
+
+#[post("/registration", data = "<form>", format = "json")]
 pub async fn post_new_item(
     mut form: Option<Json<UserDboPassUser>>,
     database: &State<database::MongoDB>,
@@ -55,7 +61,7 @@ pub async fn post_new_item(
     }
 }
 
-#[post("/chat/user/login", data = "<form>", format = "json")]
+#[post("/login", data = "<form>", format = "json")]
 pub async fn post_login(
     mut form: Option<Json<UserDboPassUser>>,
     database: &State<database::MongoDB>,
@@ -73,7 +79,7 @@ pub async fn post_login(
     }
 }
 
-#[get("/chat/user")]
+#[get("/users")]
 pub async fn get_all_acc(
     database: &State<database::MongoDB>,
 ) -> Result<Json<Vec<UserDboIdUser>>, Status> {
@@ -88,7 +94,7 @@ pub async fn get_all_acc(
     };
 }
 
-#[post("/chat/message", data = "<form>", format = "json")]
+#[post("/message", data = "<form>", format = "json")]
 pub async fn post_new_message(
     mut form: Option<Json<MessageDBO>>,
     database: &State<database::MongoDB>,
@@ -119,19 +125,35 @@ pub async fn post_new_message(
     }
 }
 
-#[get("/chat/message/preview/<id>")]
+#[get("/chats/<id>")]
 pub async fn get_all_preview(
     id: String,
     database: &State<database::MongoDB>,
-) -> Result<Json<Vec<UserDboIdUser>>, Status> {
+) -> Result<Json<HashSet<String>>, Status> {
     match object_id_parse_str(id) {
-        Ok(id) => {
-            match database.find_all_info_for_preview(id).await {
-                Ok(user_from) => Ok(Json(user_from)),
-                Err(_) => { Err(Status::NotFound) }
-            }
-        }
-        Err(_) => { Err(Status::BadRequest) }
+        Ok(id) => match database.find_all_info_for_preview(id).await {
+            Ok(user_from) => Ok(Json(user_from)),
+            Err(_) => Err(Status::NotFound),
+        },
+        Err(_) => Err(Status::BadRequest),
+    }
+}
+
+#[get("/chat/<first_id>/<second_id>")]
+pub async fn get_all_message_from_to(
+    first_id: String,
+    second_id: String,
+    database: &State<database::MongoDB>,
+) -> Result<Json<Vec<MessageTwoUsers>>, Status> {
+    match object_id_parse_str(first_id) {
+        Ok(to_id) => match object_id_parse_str(second_id) {
+            Ok(from_id) => match database.get_massages_two_users(to_id, from_id).await {
+                Ok(messages) => Ok(Json(messages)),
+                Err(_) => Err(Status::NotFound),
+            },
+            Err(_) => Err(Status::BadRequest),
+        },
+        Err(_) => Err(Status::BadRequest),
     }
 }
 

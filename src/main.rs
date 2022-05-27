@@ -5,16 +5,48 @@ mod database;
 mod model;
 mod routes;
 
-use rocket::{serde::json::Json, serde::Serialize};
+use rocket::fairing::{Fairing, Info, Kind};
+use rocket::http::Header;
+use rocket::{serde::json::Json, serde::Serialize, Request, Response};
 use routes::*;
+
+pub struct CORS;
+
+#[rocket::async_trait]
+impl Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new(
+            "Access-Control-Allow-Methods",
+            "POST, GET, PATCH, OPTIONS",
+        ));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+    }
+}
 
 #[launch]
 async fn rocket() -> _ {
     rocket::build()
+        .attach(CORS)
         .attach(database::init().await)
         .mount(
             "/api/v1",
-            routes![post_new_item, get_all_acc, post_login, post_new_message, get_all_preview],
+            routes![
+                post_new_item,
+                get_all_acc,
+                post_login,
+                post_new_message,
+                get_all_preview,
+                get_all_message_from_to
+            ],
         )
         .register(
             "/",
