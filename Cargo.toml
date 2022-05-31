@@ -15,3 +15,5 @@ uuid = { version = "1.1.0", features = ["v4"] }
 bcrypt = "0.13.0"
 tokio = "1.18.2"
 chrono = "0.4.19"
+jsonwebtoken = "8.1.0"
+rocket_contrib = "0.4.11"

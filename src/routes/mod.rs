@@ -1,11 +1,12 @@
-use serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
 use rocket::State;
+use serde::{Deserialize, Serialize};
 
-use crate::model::User;
 use crate::database;
+use crate::model::User;
 
 pub(crate) mod authorization;
+pub(crate) mod errors_catch;
 pub(crate) mod messages;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -99,40 +100,39 @@ async fn login(username: String, database: &State<database::MongoDB>) -> Result<
     }
 }
 
-    // BASIC
-    // get one header Authorization -> (Basic dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5)
-    // if header does not exist
-    //      return 401
-    // else
-    //      split string by space -> 'Basic', 'dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5'
-    //      get second item -> 'dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5'
-    //      split token by ":::" -> 'dGVzdEB0ZXN0LmNvbQ==', 'cXdlcnR5'
-    //      get first item -> 'dGVzdEB0ZXN0LmNvbQ=='
-    //          parse item from base64 -> 'test@test.com'
-    //          find user in DB by email
-    //      get second item -> 'cXdlcnR5'
-    //          parse item from base64 -> 'qwerty'
-    //          if user password equal parsed value
-    //              user authorized
-    //          else
-    //              return 401
-    //
-    //
+// BASIC
+// get one header Authorization -> (Basic dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5)
+// if header does not exist
+//      return 401
+// else
+//      split string by space -> 'Basic', 'dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5'
+//      get second item -> 'dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5'
+//      split token by ":::" -> 'dGVzdEB0ZXN0LmNvbQ==', 'cXdlcnR5'
+//      get first item -> 'dGVzdEB0ZXN0LmNvbQ=='
+//          parse item from base64 -> 'test@test.com'
+//          find user in DB by email
+//      get second item -> 'cXdlcnR5'
+//          parse item from base64 -> 'qwerty'
+//          if user password equal parsed value
+//              user authorized
+//          else
+//              return 401
+//
+//
 
-
-    // Bearer
-    // match get one header Authorization -> (Bearer 'TOKEN')
-    //     Some(header) => {
-    //         let array_header_val = header.split(" ")
-    //             if array_header_val[1].is_empty {return Err(Status::401)}
-    //             else {
-    //                 array_header_val[1].parse_from_JWD() => struct { user_id: 'ObjectId' }
-    //                 if find user in DB by user_id {
-    //                     return Ok(Status::Ok)
-    //                 } else {
-    //                      return Err(Status::401)
-    //                 }
-    //             }
-    //         },
-    //     None(_) => return Err(Status::401)
-    //}
+// Bearer
+// match get one header Authorization -> (Bearer 'TOKEN')
+//     Some(header) => {
+//         let array_header_val = header.split(" ")
+//             if array_header_val[1].is_empty {return Err(Status::401)}
+//             else {
+//                 array_header_val[1].parse_from_JWD() => struct { user_id: 'ObjectId' }
+//                 if find user in DB by user_id {
+//                     return Ok(Status::Ok)
+//                 } else {
+//                      return Err(Status::401)
+//                 }
+//             }
+//         },
+//     None(_) => return Err(Status::401)
+//}

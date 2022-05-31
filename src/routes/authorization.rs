@@ -16,9 +16,8 @@ pub async fn post_registration(
                 match database.create_new_acc(form).await {
                     Ok(_) => Ok(Json(Tokens {
                         token: Uuid::new_v4().to_string(),
-                        temp_token: Uuid::new_v4().to_string()
-                    }
-                    )),
+                        temp_token: Uuid::new_v4().to_string(),
+                    })),
                     Err(_) => Err(Status::InternalServerError),
                 }
             } else {
