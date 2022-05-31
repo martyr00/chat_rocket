@@ -1,5 +1,5 @@
-use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
+use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {

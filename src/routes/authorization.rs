@@ -1,9 +1,8 @@
 use bcrypt::verify;
 use rocket::{http::Status, serde::json::Json, State};
-
 use uuid::Uuid;
-use crate::database;
 
+use crate::database;
 use crate::routes::{get_is_valid_user_data, login, Tokens, UserDboPassUser};
 
 #[post("/registration", data = "<form>", format = "json")]

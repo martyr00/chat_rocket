@@ -3,11 +3,10 @@ extern crate rocket;
 
 use rocket::{serde::json::Json, serde::Serialize};
 
+use crate::messages::{get_all_acc, post_new_message, get_all_preview, get_all_message_from_to};
+use crate::authorization::{post_registration, post_login};
 use crate::routes::authorization;
 use crate::routes::messages;
-
-use crate::authorization::{post_registration, post_login};
-use crate::messages::{get_all_acc, post_new_message, get_all_preview, get_all_message_from_to};
 
 mod database;
 mod model;

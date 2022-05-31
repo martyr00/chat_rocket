@@ -1,12 +1,11 @@
+use serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
 use rocket::State;
-use serde::{Deserialize, Serialize};
 
-use crate::database;
 use crate::model::User;
+use crate::database;
 
 pub(crate) mod authorization;
-mod database_models;
 pub(crate) mod messages;
 
 #[derive(Debug, Serialize, Deserialize)]

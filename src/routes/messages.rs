@@ -1,8 +1,10 @@
 use rocket::{http::Status, serde::json::Json, State};
 use std::collections::HashSet;
-use crate::database;
 
-use crate::routes::{get_is_valid_message_data, MessageDBO, MessageDBOId, MessageTwoUsers, object_id_parse_str, UserDboIdUser};
+use crate::routes::{
+    get_is_valid_message_data, MessageDBO, MessageDBOId, MessageTwoUsers, object_id_parse_str, UserDboIdUser
+};
+use crate::database;
 
 #[get("/users")]
 pub async fn get_all_acc(

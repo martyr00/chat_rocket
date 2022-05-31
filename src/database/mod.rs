@@ -1,15 +1,15 @@
 extern crate bcrypt;
 
-use bcrypt::hash;
-use chrono::{NaiveTime, Utc};
-use std::collections::HashSet;
 use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
 use rocket::{fairing::AdHoc, futures::TryStreamExt};
+use std::collections::HashSet;
 use rocket::serde::json::Json;
+use chrono::{NaiveTime, Utc};
+use bcrypt::hash;
 
+use crate::routes::{MessageDBOId, MessageTwoUsers, UserDboIdUser, UserDboPassUser};
 use crate::model::{Message, User};
 use crate::database::private::DB;
-use crate::routes::{MessageDBOId, MessageTwoUsers, UserDboIdUser, UserDboPassUser};
 
 mod private;
 
