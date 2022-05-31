@@ -1,15 +1,16 @@
-mod private;
 extern crate bcrypt;
 
-use crate::database::private::DB;
 use bcrypt::hash;
 use chrono::{NaiveTime, Utc};
 use std::collections::HashSet;
+use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
+use rocket::{fairing::AdHoc, futures::TryStreamExt};
+
+mod private;
 
 use crate::model::{Message, User};
 use crate::{MessageDBOId, MessageTwoUsers, UserDboIdUser, UserDboPassUser};
-use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
-use rocket::{fairing::AdHoc, futures::TryStreamExt};
+use crate::database::private::DB;
 
 pub struct MongoDB {
     database: Database,

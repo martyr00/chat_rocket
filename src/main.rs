@@ -10,32 +10,9 @@ use rocket::http::Header;
 use rocket::{serde::json::Json, serde::Serialize, Request, Response};
 use routes::*;
 
-pub struct CORS;
-
-#[rocket::async_trait]
-impl Fairing for CORS {
-    fn info(&self) -> Info {
-        Info {
-            name: "Add CORS headers to responses",
-            kind: Kind::Response,
-        }
-    }
-
-    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
-        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
-        response.set_header(Header::new(
-            "Access-Control-Allow-Methods",
-            "POST, GET, PATCH, OPTIONS",
-        ));
-        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
-        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
-    }
-}
-
 #[launch]
 async fn rocket() -> _ {
     rocket::build()
-        .attach(CORS)
         .attach(database::init().await)
         .mount(
             "/api/v1",
@@ -105,3 +82,13 @@ fn unauthorized() -> Json<ServerError> {
         desc: "he request requires user authentication.".to_string(),
     })
 }
+
+
+
+
+
+
+
+
+
+
