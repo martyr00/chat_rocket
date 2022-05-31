@@ -1,14 +1,14 @@
 #[macro_use]
 extern crate rocket;
 
-mod database;
-mod model;
-mod routes;
-
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
 use rocket::{serde::json::Json, serde::Serialize, Request, Response};
 use routes::*;
+
+mod database;
+mod model;
+mod routes;
 
 #[launch]
 async fn rocket() -> _ {
@@ -82,13 +82,3 @@ fn unauthorized() -> Json<ServerError> {
         desc: "he request requires user authentication.".to_string(),
     })
 }
-
-
-
-
-
-
-
-
-
-

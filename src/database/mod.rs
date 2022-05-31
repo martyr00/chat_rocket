@@ -147,6 +147,10 @@ impl MongoDB {
         }
         Ok(vec_messages)
     }
+
+    pub async fn is_authorization(&self) { //-> mongodb::error::Result<bool> {
+        //todo is_authorization
+    }
 }
 
 pub async fn init() -> AdHoc {
