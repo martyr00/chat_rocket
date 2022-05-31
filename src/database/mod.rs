@@ -5,12 +5,13 @@ use chrono::{NaiveTime, Utc};
 use std::collections::HashSet;
 use mongodb::{bson, bson::oid::ObjectId, options::ClientOptions, Client, Database};
 use rocket::{fairing::AdHoc, futures::TryStreamExt};
-
-mod private;
+use rocket::serde::json::Json;
 
 use crate::model::{Message, User};
-use crate::{MessageDBOId, MessageTwoUsers, UserDboIdUser, UserDboPassUser};
 use crate::database::private::DB;
+use crate::routes::{MessageDBOId, MessageTwoUsers, UserDboIdUser, UserDboPassUser};
+
+mod private;
 
 pub struct MongoDB {
     database: Database,
@@ -20,7 +21,7 @@ impl MongoDB {
     fn new(database: Database) -> Self {
         MongoDB { database }
     }
-    pub async fn create_new_acc(&self, user: &mut UserDboPassUser) -> mongodb::error::Result<()> {
+    pub async fn create_new_acc(&self, user: Json<UserDboPassUser>) -> mongodb::error::Result<()> {
         let collection = self.database.collection::<User>("user");
 
         match hash(&user.password, 4) {
@@ -146,10 +147,6 @@ impl MongoDB {
             }
         }
         Ok(vec_messages)
-    }
-
-    pub async fn is_authorization(&self) { //-> mongodb::error::Result<bool> {
-        //todo is_authorization
     }
 }
 

@@ -1,11 +1,13 @@
-use bcrypt::verify;
 use mongodb::bson::oid::ObjectId;
-use rocket::{http::Status, serde::json::Json, State};
+use rocket::State;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 use crate::database;
 use crate::model::User;
+
+pub(crate) mod authorization;
+mod database_models;
+pub(crate) mod messages;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserDboPassUser {
@@ -17,6 +19,12 @@ pub struct UserDboPassUser {
 pub struct UserDboIdUser {
     pub(crate) _id: String,
     pub(crate) username: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Tokens {
+    pub(crate) token: String,
+    pub(crate) temp_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,122 +47,6 @@ pub struct MessageTwoUsers {
     pub to: String,
     pub from: String,
     pub time: String,
-}
-
-#[post("/registration", data = "<form>", format = "json")]
-pub async fn post_new_item(
-    mut form: Option<Json<UserDboPassUser>>,
-    database: &State<database::MongoDB>,
-) -> Result<Status, Status> {
-    match form {
-        Some(ref mut form) => {
-            if get_is_valid_user_data(&form, database).await {
-                match database.create_new_acc(form).await {
-                    Ok(_) => Ok(Status::Ok),
-                    Err(_) => Err(Status::InternalServerError),
-                }
-            } else {
-                Err(Status::BadRequest)
-            }
-        }
-        None => Err(Status::BadRequest),
-    }
-}
-
-#[post("/login", data = "<form>", format = "json")]
-pub async fn post_login(
-    mut form: Option<Json<UserDboPassUser>>,
-    database: &State<database::MongoDB>,
-) -> Result<Status, Status> {
-    match form {
-        Some(ref mut form) => match login(form.username.clone(), database).await {
-            Ok(_) => Err(Status::Unauthorized),
-            Err(result) => match verify(&form.password, &*result.password) {
-                Ok(true) => Ok(Status::Ok),
-                Ok(false) => Err(Status::Unauthorized),
-                Err(_) => Err(Status::InternalServerError),
-            },
-        },
-        None => Err(Status::Unauthorized),
-    }
-}
-
-#[get("/users")]
-pub async fn get_all_acc(
-    database: &State<database::MongoDB>,
-) -> Result<Json<Vec<UserDboIdUser>>, Status> {
-    return match database.get_all_items().await {
-        Ok(users) => Ok(Json(users)),
-        Err(error) => {
-            println!("----------------");
-            println!("error: {:?}", error);
-            println!("----------------");
-            Err(Status::InternalServerError)
-        }
-    };
-}
-
-#[post("/message", data = "<form>", format = "json")]
-pub async fn post_new_message(
-    mut form: Option<Json<MessageDBO>>,
-    database: &State<database::MongoDB>,
-) -> Result<Status, Status> {
-    match form {
-        Some(ref mut form) => match object_id_parse_str(form.to.clone()) {
-            Ok(to_id) => match object_id_parse_str(form.from.clone()) {
-                Ok(from_id) => {
-                    if get_is_valid_message_data(form.body.clone()).await {
-                        let result = MessageDBOId {
-                            body: form.body.clone(),
-                            to: to_id,
-                            from: from_id,
-                        };
-                        match database.post_message(result).await {
-                            Ok(_) => Ok(Status::Ok),
-                            Err(_) => Err(Status::InternalServerError),
-                        }
-                    } else {
-                        Err(Status::BadRequest)
-                    }
-                }
-                Err(_) => Err(Status::BadRequest),
-            },
-            Err(_) => Err(Status::BadRequest),
-        },
-        None => Err(Status::BadRequest),
-    }
-}
-
-#[get("/chats/<id>")]
-pub async fn get_all_preview(
-    id: String,
-    database: &State<database::MongoDB>,
-) -> Result<Json<HashSet<String>>, Status> {
-    match object_id_parse_str(id) {
-        Ok(id) => match database.find_all_info_for_preview(id).await {
-            Ok(user_from) => Ok(Json(user_from)),
-            Err(_) => Err(Status::NotFound),
-        },
-        Err(_) => Err(Status::BadRequest),
-    }
-}
-
-#[get("/chat/<first_id>/<second_id>")]
-pub async fn get_all_message_from_to(
-    first_id: String,
-    second_id: String,
-    database: &State<database::MongoDB>,
-) -> Result<Json<Vec<MessageTwoUsers>>, Status> {
-    match object_id_parse_str(first_id) {
-        Ok(to_id) => match object_id_parse_str(second_id) {
-            Ok(from_id) => match database.get_massages_two_users(to_id, from_id).await {
-                Ok(messages) => Ok(Json(messages)),
-                Err(_) => Err(Status::NotFound),
-            },
-            Err(_) => Err(Status::BadRequest),
-        },
-        Err(_) => Err(Status::BadRequest),
-    }
 }
 
 fn object_id_parse_str(id_str: String) -> Result<ObjectId, String> {
@@ -207,3 +99,41 @@ async fn login(username: String, database: &State<database::MongoDB>) -> Result<
         Err(_) => Ok(false),
     }
 }
+
+    // BASIC
+    // get one header Authorization -> (Basic dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5)
+    // if header does not exist
+    //      return 401
+    // else
+    //      split string by space -> 'Basic', 'dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5'
+    //      get second item -> 'dGVzdEB0ZXN0LmNvbQ==:::cXdlcnR5'
+    //      split token by ":::" -> 'dGVzdEB0ZXN0LmNvbQ==', 'cXdlcnR5'
+    //      get first item -> 'dGVzdEB0ZXN0LmNvbQ=='
+    //          parse item from base64 -> 'test@test.com'
+    //          find user in DB by email
+    //      get second item -> 'cXdlcnR5'
+    //          parse item from base64 -> 'qwerty'
+    //          if user password equal parsed value
+    //              user authorized
+    //          else
+    //              return 401
+    //
+    //
+
+
+    // Bearer
+    // match get one header Authorization -> (Bearer 'TOKEN')
+    //     Some(header) => {
+    //         let array_header_val = header.split(" ")
+    //             if array_header_val[1].is_empty {return Err(Status::401)}
+    //             else {
+    //                 array_header_val[1].parse_from_JWD() => struct { user_id: 'ObjectId' }
+    //                 if find user in DB by user_id {
+    //                     return Ok(Status::Ok)
+    //                 } else {
+    //                      return Err(Status::401)
+    //                 }
+    //             }
+    //         },
+    //     None(_) => return Err(Status::401)
+    //}

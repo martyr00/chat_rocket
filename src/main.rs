@@ -1,10 +1,13 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::Header;
-use rocket::{serde::json::Json, serde::Serialize, Request, Response};
-use routes::*;
+use rocket::{serde::json::Json, serde::Serialize};
+
+use crate::routes::authorization;
+use crate::routes::messages;
+
+use crate::authorization::{post_registration, post_login};
+use crate::messages::{get_all_acc, post_new_message, get_all_preview, get_all_message_from_to};
 
 mod database;
 mod model;
@@ -14,15 +17,16 @@ mod routes;
 async fn rocket() -> _ {
     rocket::build()
         .attach(database::init().await)
+        //.attach(database::init().await)
         .mount(
             "/api/v1",
             routes![
-                post_new_item,
-                get_all_acc,
+                post_registration,
                 post_login,
+                get_all_acc,
                 post_new_message,
                 get_all_preview,
-                get_all_message_from_to
+                get_all_message_from_to,
             ],
         )
         .register(
