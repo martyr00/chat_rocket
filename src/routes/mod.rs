@@ -24,7 +24,7 @@ pub struct UserDboIdUser {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegistrationResponse {
     pub(crate) token: String,
-    pub(crate) temp_token: String,
+    //pub(crate) temp_token: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]

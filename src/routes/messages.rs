@@ -1,6 +1,7 @@
 use rocket::{http::Status, serde::json::Json, State};
 use std::collections::HashSet;
 
+use crate::authorization::Authorization;
 use crate::database;
 use crate::routes::{
     get_is_valid_message_data, object_id_parse_str, MessageDBO, MessageDBOId, MessageTwoUsers,
@@ -9,6 +10,7 @@ use crate::routes::{
 
 #[get("/users")]
 pub async fn get_all_acc(
+    _auth: Authorization,
     database: &State<database::MongoDB>,
 ) -> Result<Json<Vec<UserDboIdUser>>, Status> {
     return match database.get_all_items().await {
@@ -19,6 +21,7 @@ pub async fn get_all_acc(
 
 #[post("/message", data = "<form>", format = "json")]
 pub async fn post_new_message(
+    _auth: Authorization,
     form: Option<Json<MessageDBO>>,
     database: &State<database::MongoDB>,
 ) -> Result<Status, Status> {
@@ -50,6 +53,7 @@ pub async fn post_new_message(
 
 #[get("/chats/<id>")]
 pub async fn get_all_preview(
+    _auth: Authorization,
     id: String,
     database: &State<database::MongoDB>,
 ) -> Result<Json<HashSet<String>>, Status> {
@@ -64,6 +68,7 @@ pub async fn get_all_preview(
 
 #[get("/chats/<first_id>/<second_id>")]
 pub async fn get_all_message_from_to(
+    _auth: Authorization,
     first_id: String,
     second_id: String,
     database: &State<database::MongoDB>,
