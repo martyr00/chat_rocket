@@ -22,7 +22,7 @@ pub struct UserDboIdUser {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Tokens {
+pub struct RegistrationResponse {
     pub(crate) token: String,
     pub(crate) temp_token: String,
 }
@@ -120,19 +120,4 @@ async fn login(username: String, database: &State<database::MongoDB>) -> Result<
 //
 //
 
-// Bearer
-// match get one header Authorization -> (Bearer 'TOKEN')
-//     Some(header) => {
-//         let array_header_val = header.split(" ")
-//             if array_header_val[1].is_empty {return Err(Status::401)}
-//             else {
-//                 array_header_val[1].parse_from_JWD() => struct { user_id: 'ObjectId' }
-//                 if find user in DB by user_id {
-//                     return Ok(Status::Ok)
-//                 } else {
-//                      return Err(Status::401)
-//                 }
-//             }
-//         },
-//     None(_) => return Err(Status::401)
-//}
+

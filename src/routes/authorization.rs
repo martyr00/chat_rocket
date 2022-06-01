@@ -3,18 +3,34 @@ use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;
 
 use crate::database;
-use crate::routes::{get_is_valid_user_data, login, Tokens, UserDboPassUser};
+use crate::routes::{get_is_valid_user_data, login, RegistrationResponse, UserDboPassUser};
+
+// Bearer
+// match get one header Authorization -> (Bearer 'TOKEN')
+//     Some(header) => {
+//         let array_header_val = header.split(" ")
+//             if array_header_val[1].is_empty {return Err(Status::401)}
+//             else {
+//                 array_header_val[1].parse_from_JWD() => struct { user_id: 'ObjectId' }
+//                 if find user in DB by user_id {
+//                     return Ok(Status::Ok)
+//                 } else {
+//                      return Err(Status::401)
+//                 }
+//             }
+//         },
+//     None(_) => return Err(Status::401)
 
 #[post("/registration", data = "<form>", format = "json")]
 pub async fn post_registration(
     form: Option<Json<UserDboPassUser>>,
     database: &State<database::MongoDB>,
-) -> Result<Json<Tokens>, Status> {
+) -> Result<Json<RegistrationResponse>, Status> {
     match form {
         Some(form) => {
             if get_is_valid_user_data(&form, database).await {
                 match database.create_new_acc(form).await {
-                    Ok(_) => Ok(Json(Tokens {
+                    Ok(_) => Ok(Json(RegistrationResponse {
                         token: Uuid::new_v4().to_string(),
                         temp_token: Uuid::new_v4().to_string(),
                     })),
