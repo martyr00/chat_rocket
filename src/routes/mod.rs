@@ -8,6 +8,7 @@ use crate::model::User;
 pub(crate) mod authorization;
 pub(crate) mod errors_catch;
 pub(crate) mod messages;
+pub(crate) mod is_authorization;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserDboPassUser {

@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
+use base64::encode;
 use crate::authorization::{post_login, post_registration};
 use crate::errors_catch::{bad_request, forbidden, internal_sever_error, not_found, unauthorized};
 use crate::messages::{get_all_acc, get_all_message_from_to, get_all_preview, post_new_message};
@@ -14,9 +15,9 @@ mod routes;
 
 #[launch]
 async fn rocket() -> _ {
+    println!("{}:{}", base64::encode("test1"), base64::encode("123456789"));
     rocket::build()
         .attach(database::init().await)
-        //.attach(database::init().await)
         .mount(
             "/api/v1",
             routes![
